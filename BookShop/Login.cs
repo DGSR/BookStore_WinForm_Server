@@ -20,37 +20,18 @@ namespace BookShop
                 MessageBox.Show("Please Enter Login and Password");
                 return;
             }
-            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder
-            {
-                DataSource = @"(LocalDB)\MSSQLLocalDB",
-                AttachDBFilename = Bookstore.path,
-                IntegratedSecurity = true
-            };
-            IDbConnection connection = new SqlConnection(builder.ConnectionString);
-            connection.Open();
-
-            string query = "select login,password from registry";
-            IDbCommand command = new SqlCommand(query);
-            command.Connection = connection;
-            IDataReader reader = command.ExecuteReader();
-            // Отладка1:Для вывода всего списка логин-пароль
-            // string s = "";
-            string[] log =new string[10];
+            string[] log = new string[10];
             string[] pas = new string[10];
-            byte a = 0;
-            while (reader.Read())
+            string query = "select login,password from registry";
+            string[] mess = Bookstore.Send(query);
+
+            for (int i = 0; i < mess.Length; i++)
             {
-                object login = reader.GetValue(0);
-                object pass = reader.GetValue(1);
-                log[a] = login.ToString();
-                pas[a] = pass.ToString();
-                a++;
-                // Отладка1: s += login+" " + pass+ " \n";
+                mess[i]=mess[i].Remove(mess[i].LastIndexOf(','), 1);
+                log[i] = mess[i].Substring(0, mess[i].IndexOf(','));
+                pas[i] = mess[i].Substring((mess[i].IndexOf(',')+1));
             }
-            // Отладка1: MessageBox.Show(s);
-            reader.Close();
-            command.Dispose();
-            connection.Close();
+            byte a;
             for (a=0; a < log.Length; a++)
             {
                 if ((LoginBox.Text.Trim()==log[a])&& (PasswordBox.Text.Trim() == pas[a])){goto Success;}

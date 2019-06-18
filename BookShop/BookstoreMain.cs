@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
@@ -10,6 +9,8 @@ using System.Windows.Forms;
 using System.Data.Sql;
 using System.Data.SqlClient;
 using System.IO;
+using System.Net;
+using System.Net.Sockets;
 
 
 namespace BookShop
@@ -21,8 +22,8 @@ namespace BookShop
         public string[] PickedBooksName = { }; //Массив Названий Выбранных книг
         public int[] PickedBooksAmount = { };//Массив количества Выбрынных книг
         public string[] PickedBooksOrder = new string[1];//Массив для вывода Корзины набранных книг
-        // public static string path = @"C:\Users\herma\source\repos\BookShop\BookShop\Data\base-islamov.mdf";
-        public static string path = Path.GetFullPath(@".\Data\base-islamov.mdf");
+        public static string path = Path.GetFullPath(@"..\..\..\BookShopServer\bin\Debug\Data\base-islamov.mdf");
+ 
         public Bookstore()
         {
             InitializeComponent();
@@ -34,6 +35,36 @@ namespace BookShop
             OrderMenuMake.Enabled = true;
             OrderMenuMyOrders.Enabled = true;
         }
+        public static string[] Send(string s)
+        {
+            IPHostEntry ipHost = Dns.GetHostEntry("localhost");
+            int port = 11000;
+            IPAddress ipAddr = ipHost.AddressList[0];
+            IPEndPoint ipEndPoint = new IPEndPoint(ipAddr, port);
+            Socket sender1 = new Socket(ipAddr.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            sender1.Connect(ipEndPoint);
+            byte[] bytes = new byte[1024];            
+            
+            string message = s;
+            bytes = Encoding.UTF8.GetBytes(message);
+            sender1.Send(bytes);
+            message = "";
+            while(true)
+            {
+                int bytesRec = sender1.Receive(bytes);
+                if (bytesRec == 0)
+                    break;
+                else
+                {
+                    message += Encoding.UTF8.GetString(bytes, 0, bytesRec);
+                }
+
+            }
+            //MessageBox.Show(message);
+            sender1.Shutdown(SocketShutdown.Both);
+            sender1.Close();
+            return message.Split(';');
+        }
         private void Bookstore_Load(object sender, EventArgs e)
         {
             // Заголовок для Корзины
@@ -41,61 +72,29 @@ namespace BookShop
             PickedOrder.Text = PickedBooksOrder[0];
 
             // Соединение с базой и наполнение селектов
-            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder
-            {
-                DataSource = @"(LocalDB)\MSSQLLocalDB",
-                AttachDBFilename = path,
-                IntegratedSecurity = true
-            };
-            IDbConnection connection = new SqlConnection(builder.ConnectionString);
-            connection.Open();
-
             string query = "select book_name from book";
-            IDbCommand command = new SqlCommand(query);
-            command.Connection = connection;
-            IDataReader reader = command.ExecuteReader();
-            while (reader.Read())
-            {
-                object book = reader.GetValue(0);
-                BookSelector.Items.Add(book);
+            string[] mess= Send(query);
+            for(int i=0;i<mess.Length;i++){
+                BookSelector.Items.Add(mess[i]);
             }
-            reader.Close();
 
             query = "select author_name from authors";
-            command = new SqlCommand(query);
-            command.Connection = connection;
-            reader = command.ExecuteReader();
-            while (reader.Read())
-            {
-                object obj = reader.GetValue(0);
-                AuthorBookSelector.Items.Add(obj);
+            mess = Send(query);
+            for (int i = 0; i < mess.Length; i++){
+                AuthorBookSelector.Items.Add(mess[i]);
             }
-            reader.Close();
-            
-            query = "select genre_name from genres";
-            command = new SqlCommand(query);
-            command.Connection = connection;
-            reader = command.ExecuteReader();
-            while (reader.Read())
-            {
-                object obj = reader.GetValue(0);
-                GenreBookSelector.Items.Add(obj);
-            }
-            reader.Close();
-            
-            query = "select publisher_name from publishers";
-            command = new SqlCommand(query);
-            command.Connection = connection;
-            reader = command.ExecuteReader();
-            while (reader.Read())
-            {
-                object obj = reader.GetValue(0);
-                PublisherBookSelector.Items.Add(obj);
-            }
-            reader.Close();
 
-            command.Dispose();
-            connection.Close();
+            query = "select genre_name from genres";
+            mess = Send(query);
+            for (int i = 0; i < mess.Length; i++){
+                GenreBookSelector.Items.Add(mess[i]);
+            }
+
+            query = "select publisher_name from publishers";
+            mess = Send(query);
+            for (int i = 0; i < mess.Length; i++){
+                PublisherBookSelector.Items.Add(mess[i]);
+            }
         }
 
         private void loginToolStripMenuItem_Click(object sender, EventArgs e)// При нажатии на Логин в Меню File->Login
@@ -111,33 +110,10 @@ namespace BookShop
         {
             //Очищается заголовок вывода книжнки по категории
             CategoryBookSelector.Items.Clear();
-            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder
-            {
-                DataSource = @"(LocalDB)\MSSQLLocalDB",
-                AttachDBFilename = path,
-                IntegratedSecurity = true
-            };
-            IDbConnection connection = new SqlConnection(builder.ConnectionString);
-            connection.Open();
-
-            SqlParameter sqlParameter = new SqlParameter("@aut", SqlDbType.VarChar, 255)
-            {
-                Value = AuthorBookSelector.SelectedItem.ToString()
-            };
-            IDbCommand command = new SqlCommand("authorp");
-            command.CommandType = CommandType.StoredProcedure;
-            command.Connection = connection;
-            command.Parameters.Add(sqlParameter);
-            command.Prepare();
-            IDataReader reader = command.ExecuteReader();
-            while (reader.Read())
-            {
-                object book = reader.GetValue(0);
-                CategoryBookSelector.Items.Add(book);
-            }
-            reader.Close();
-            command.Dispose();
-            connection.Close();
+            string query = "EXEC authorp @aut= '"+AuthorBookSelector.SelectedItem.ToString() +"'";
+            string[] mess = Send(query);
+            for (int i = 0; i < mess.Length; i++)
+                CategoryBookSelector.Items.Add(mess[i]);
             GenreBookSelector.Text = "";
             PublisherBookSelector.Text = "";
         }
@@ -145,33 +121,10 @@ namespace BookShop
         private void GenreBookSelector_SelectedValueChanged(object sender, EventArgs e)// №2
         {
             CategoryBookSelector.Items.Clear();
-            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder
-            {
-                DataSource = @"(LocalDB)\MSSQLLocalDB",
-                AttachDBFilename = path,
-                IntegratedSecurity = true
-            };
-            IDbConnection connection = new SqlConnection(builder.ConnectionString);
-            connection.Open();
-
-            SqlParameter sqlParameter = new SqlParameter("@gen", SqlDbType.VarChar, 255)
-            {
-                Value = GenreBookSelector.SelectedItem.ToString()
-            };
-            IDbCommand command = new SqlCommand("genrep");
-            command.CommandType = CommandType.StoredProcedure;
-            command.Connection = connection;
-            command.Parameters.Add(sqlParameter);
-            command.Prepare();
-            IDataReader reader = command.ExecuteReader();
-            while (reader.Read())
-            {
-                object book = reader.GetValue(0);
-                CategoryBookSelector.Items.Add(book);
-            }
-            reader.Close();
-            command.Dispose();
-            connection.Close();
+            string query = "EXEC authorp @gen= '" + GenreBookSelector.SelectedItem.ToString() + "'";
+            string[] mess = Send(query);
+            for (int i = 0; i < mess.Length; i++)
+                CategoryBookSelector.Items.Add(mess[i]);
             AuthorBookSelector.Text = "";
             PublisherBookSelector.Text = "";
         }
@@ -179,39 +132,17 @@ namespace BookShop
         private void PublisherBookSelector_SelectedValueChanged(object sender, EventArgs e)//№3
         {
             CategoryBookSelector.Items.Clear();
-            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder
-            {
-                DataSource = @"(LocalDB)\MSSQLLocalDB",
-                AttachDBFilename = path,
-                IntegratedSecurity = true
-            };
-            IDbConnection connection = new SqlConnection(builder.ConnectionString);
-            connection.Open();
-
-            SqlParameter sqlParameter = new SqlParameter("@pub", SqlDbType.VarChar, 255)
-            {
-                Value = PublisherBookSelector.SelectedItem.ToString()
-            };
-            IDbCommand command = new SqlCommand("publishp");
-            command.CommandType = CommandType.StoredProcedure;
-            command.Connection = connection;
-            command.Parameters.Add(sqlParameter);
-            command.Prepare();
-            IDataReader reader = command.ExecuteReader();
-            while (reader.Read())
-            {
-                object book = reader.GetValue(0);
-                CategoryBookSelector.Items.Add(book);
-            }
-            reader.Close();
-            command.Dispose();
-            connection.Close();
+            string query = "EXEC authorp @pub= '" + PublisherBookSelector.SelectedItem.ToString() + "'";
+            string[] mess = Send(query);
+            for (int i = 0; i < mess.Length; i++)
+                CategoryBookSelector.Items.Add(mess[i]);
             GenreBookSelector.Text = "";
             AuthorBookSelector.Text = "";
         }
 
         private void FileMenuExit_Click(object sender, EventArgs e)//Выход
         {
+            //sender1.Close();
             Close();
         }
 
@@ -230,7 +161,7 @@ namespace BookShop
                 MessageBox.Show("The Amount of Books must be filled");
                 return;
             }
-            if(BookSelector.SelectedIndex>-1)
+            if(BookSelector.Text!="")
             {
                 // Каждый раз когда добавляется новая книга в массив, последний расширяется
                 //Заносятся в глобальные массивы данные, плюс в селектор удаления книги
@@ -310,46 +241,15 @@ namespace BookShop
             PickedBooksName = PickedBooksName.Where(x => x != null).ToArray();
             PickedBooksAmount = PickedBooksAmount.Where(x => x != 0).ToArray();
 
-            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder
-            {
-                DataSource = @"(LocalDB)\MSSQLLocalDB",
-                AttachDBFilename = path,
-                IntegratedSecurity = true
-            };
-
-            IDbConnection connection = new SqlConnection(builder.ConnectionString);
-            connection.Open();
-
-            SqlParameter sqlParameter = new SqlParameter("@log", SqlDbType.VarChar, 255)
-            {
-                Value = loguser
-            };
-            IDbCommand command = new SqlCommand("InsOrd");
-            command.CommandType = CommandType.StoredProcedure;
-            command.Connection = connection;
-            command.Parameters.Add(sqlParameter);
-            command.Prepare();
-            // В сущность order вставляется заказ
-            command.ExecuteNonQuery();
-            SqlParameter parameter;
+            string query = "EXEC InsOrd @log= '" + loguser + "'";
+            string[] mess = Send(query);
             // Затем в сущность shopping cart вставляются все выбранные книжки
             for(int i=0;i<PickedBooksAmount.Length;i++)
             {
-                sqlParameter = new SqlParameter("@quan", SqlDbType.VarChar, 255);
-                sqlParameter.Value = PickedBooksAmount[i];
-                parameter =  new SqlParameter("@bok", SqlDbType.VarChar, 255);
-                parameter.Value = PickedBooksName[i];
-                command = new SqlCommand("InsShop");
-                command.CommandType = CommandType.StoredProcedure;
-                command.Connection = connection;
-                command.Parameters.Add(sqlParameter);
-                command.Parameters.Add(parameter);
-                command.Prepare();
-                command.ExecuteNonQuery();
+                query = "EXEC InsShop @quan= '" + PickedBooksAmount[i] + "' , @bok= '"+ PickedBooksName[i] + "'";
+                mess = Send(query);
             }
            // Очищение использованных ресурсов и вывод всех предыдущих заказов
-            command.Dispose();
-            connection.Close();
             MessageBox.Show("Order Accepted");
             Array.Clear(PickedBooksName, 0, PickedBooksName.Length);
             Array.Clear(PickedBooksAmount, 0, PickedBooksAmount.Length);
@@ -386,7 +286,6 @@ namespace BookShop
 
         private void HelpMenuContact_Click(object sender, EventArgs e)//Help-> Contact . Запуск клиента
         {
-            //System.Diagnostics.Process.Start(@"C:\Users\herma\source\repos\BookShop\BookShopClient\bin\Debug\BookShopClient.exe");
             System.Diagnostics.Process.Start(Path.GetFullPath(@"..\..\..\BookShopClient\bin\Debug\BookShopClient.exe"));
         }
 
