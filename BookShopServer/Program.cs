@@ -9,20 +9,20 @@ namespace BookShopServer
     {
         static void Main(string[] args)
         {
-            // конфигурация
+            // Config
             IPHostEntry ipHost = Dns.GetHostEntry("localhost");
             IPAddress ipAddr = ipHost.AddressList[0];
             IPEndPoint ipEndPoint = new IPEndPoint(ipAddr, 11000);
-            // создаем сокет Tcp/Ip
+            // create socket Tcp/Ip
             Socket sListener = new Socket(ipAddr.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            // назначаем сокет и слушаем входящие сокеты
+            // listening incoming sockets
             try
             {
                 sListener.Bind(ipEndPoint);
                 sListener.Listen(10);
                 while (true)
                 {
-                    // программа приостанавливается, ожидая входящее соединение
+                    // Await
                     Socket handler = sListener.Accept();
                     string data = "";
                     byte[] bytes = new byte[1024];
