@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using System.Data.SqlClient;
 using System.Windows.Forms;
@@ -10,7 +10,7 @@ namespace BookShop
         public Login()
         {
             InitializeComponent();
-            LoginBox.Select();// Чтобы автоматически был сфокусирован на логине
+            LoginBox.Select();// AutoFocus on Login
         }
 
         private void LoginSubmit_Click(object sender, EventArgs e)
@@ -33,8 +33,6 @@ namespace BookShop
             IDbCommand command = new SqlCommand(query);
             command.Connection = connection;
             IDataReader reader = command.ExecuteReader();
-            // Отладка1:Для вывода всего списка логин-пароль
-            // string s = "";
             string[] log =new string[10];
             string[] pas = new string[10];
             byte a = 0;
@@ -45,9 +43,7 @@ namespace BookShop
                 log[a] = login.ToString();
                 pas[a] = pass.ToString();
                 a++;
-                // Отладка1: s += login+" " + pass+ " \n";
             }
-            // Отладка1: MessageBox.Show(s);
             reader.Close();
             command.Dispose();
             connection.Close();
