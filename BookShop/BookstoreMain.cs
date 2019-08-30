@@ -16,13 +16,12 @@ namespace BookShop
 {
     public partial class Bookstore : Form
     {
-        //Глобальные переменные в пределах класса
-        public static string loguser; //Логин пользователя
-        public string[] PickedBooksName = { }; //Массив Названий Выбранных книг
-        public int[] PickedBooksAmount = { };//Массив количества Выбрынных книг
-        public string[] PickedBooksOrder = new string[1];//Массив для вывода Корзины набранных книг
-        // public static string path = @"C:\Users\herma\source\repos\BookShop\BookShop\Data\base-islamov.mdf";
-        public static string path = Path.GetFullPath(@".\Data\base-islamov.mdf");
+        //Global variables
+        public static string loguser;//Login
+        public string[] PickedBooksName = { }; //Bookname for chosen books
+        public int[] PickedBooksAmount = { };//Bookcount for chosen books
+        public string[] PickedBooksOrder = new string[1];//All chosen books
+        public static string path = Path.GetFullPath(@".\Data\base-bookstore.mdf");
         public Bookstore()
         {
             InitializeComponent();
@@ -287,8 +286,7 @@ namespace BookShop
             };
             SqlConnection connection = new SqlConnection(builder.ConnectionString);
             connection.Open();
-            SqlParameter sqlParameter = new SqlParameter("@usr", SqlDbType.VarChar, 255)
-            {
+            SqlParameter sqlParameter = new SqlParameter("@usr", SqlDbType.VarChar, 255){
                 Value = loguser
             };
             SqlCommand command = new SqlCommand("user_orders");           
@@ -304,14 +302,12 @@ namespace BookShop
             connection.Close();
         }
 
-        private void SubmitOrder_Click(object sender, EventArgs e)// Совершение заказа
-        {
+        private void SubmitOrder_Click(object sender, EventArgs e){
             //Пробелы в массивах убираются в конец 
             PickedBooksName = PickedBooksName.Where(x => x != null).ToArray();
             PickedBooksAmount = PickedBooksAmount.Where(x => x != 0).ToArray();
 
-            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder
-            {
+            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder{
                 DataSource = @"(LocalDB)\MSSQLLocalDB",
                 AttachDBFilename = path,
                 IntegratedSecurity = true
@@ -320,8 +316,7 @@ namespace BookShop
             IDbConnection connection = new SqlConnection(builder.ConnectionString);
             connection.Open();
 
-            SqlParameter sqlParameter = new SqlParameter("@log", SqlDbType.VarChar, 255)
-            {
+            SqlParameter sqlParameter = new SqlParameter("@log", SqlDbType.VarChar, 255){
                 Value = loguser
             };
             IDbCommand command = new SqlCommand("InsOrd");
@@ -333,8 +328,7 @@ namespace BookShop
             command.ExecuteNonQuery();
             SqlParameter parameter;
             // Затем в сущность shopping cart вставляются все выбранные книжки
-            for(int i=0;i<PickedBooksAmount.Length;i++)
-            {
+            for(int i=0;i<PickedBooksAmount.Length;i++){
                 sqlParameter = new SqlParameter("@quan", SqlDbType.VarChar, 255);
                 sqlParameter.Value = PickedBooksAmount[i];
                 parameter =  new SqlParameter("@bok", SqlDbType.VarChar, 255);
@@ -361,14 +355,12 @@ namespace BookShop
 
         private void DeletePickedSubmit_Click(object sender, EventArgs e)// Удаление из корзины выбранного в селекте заказа
         {
-            if(DeletePicked.SelectedIndex>-1)
-            {
+            if(DeletePicked.SelectedIndex>-1){
                 PickedBooksOrder[Convert.ToInt32(DeletePicked.SelectedItem) + 1] = "";
                 PickedOrder.Text = "";
                 Array.Clear(PickedBooksName, Convert.ToInt32(DeletePicked.SelectedItem), 1);
                 Array.Clear(PickedBooksAmount, Convert.ToInt32(DeletePicked.SelectedItem), 1);
-                for(int i=0;i<PickedBooksOrder.Length;i++)
-                {
+                for(int i=0;i<PickedBooksOrder.Length;i++){
                     PickedOrder.Text += PickedBooksOrder[i];
                 }
                 DeletePicked.Items.Remove(Convert.ToInt32(DeletePicked.SelectedItem));
@@ -376,19 +368,16 @@ namespace BookShop
             }
         }
 
-        private void HelpMenuAbout_Click(object sender, EventArgs e)// Help->About. Простая About форма
+        private void HelpMenuAbout_Click(object sender, EventArgs e)// Help->About
         {
-            using (AboutBox dialog = new AboutBox())
-            {
+            using (AboutBox dialog = new AboutBox()){
                 dialog.ShowDialog();
             }
         }
 
-        private void HelpMenuContact_Click(object sender, EventArgs e)//Help-> Contact . Запуск клиента
+        private void HelpMenuContact_Click(object sender, EventArgs e)//Help-> Contact. Client start
         {
-            //System.Diagnostics.Process.Start(@"C:\Users\herma\source\repos\BookShop\BookShopClient\bin\Debug\BookShopClient.exe");
             System.Diagnostics.Process.Start(Path.GetFullPath(@"..\..\..\BookShopClient\bin\Debug\BookShopClient.exe"));
         }
-
     }
 }
