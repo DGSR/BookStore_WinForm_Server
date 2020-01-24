@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text;
 using System.Net;
 using System.Net.Sockets;
@@ -30,14 +30,13 @@ namespace BookShopServer
             };
             IDbConnection connection = new SqlConnection(builder.ConnectionString);
 
-            // назначаем сокет и слушаем входящие сокеты
             try
             {
                 sListener.Bind(ipEndPoint);
                 sListener.Listen(10);
                 while (true)
                 {
-                    // программа приостанавливается, ожидая входящее соединение
+                    // Await
                     Socket handler = sListener.Accept();
                     string data = "";
                     string reply = "";
