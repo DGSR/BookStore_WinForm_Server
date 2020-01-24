@@ -317,7 +317,6 @@
             this.BookChoicePanel.Name = "BookChoicePanel";
             this.BookChoicePanel.Size = new System.Drawing.Size(225, 317);
             this.BookChoicePanel.TabIndex = 16;
-            this.BookChoicePanel.Visible = false;
             // 
             // PickedBooksPanel
             // 
